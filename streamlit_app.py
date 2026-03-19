@@ -163,7 +163,7 @@ TAB_MAP = {
 # --- Auto-refreshing news fragment ---
 @st.fragment(run_every=REFRESH_INTERVAL)
 def news_panel():
-    cols = st.columns((1, 1, 5))
+    cols = st.columns((1, 1, 3))
     cols[0].markdown(
         f"**Last updated: {datetime.now(tz).strftime('%H:%M:%S')} {tz_label}**"
     )
