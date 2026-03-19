@@ -52,7 +52,7 @@ TIMEZONE_OPTIONS = {
 # --- Header row ---
 col_title, col_mode, col_search, col_tz = st.columns([2, 2, 3, 1.5])
 with col_title:
-    st.markdown("### FINNTOP")
+    st.markdown("### [FINNTOP](https://github.com/seekingvega/st-finntop)")
 with col_mode:
     mode = st.segmented_control(
         "Mode",
