@@ -17,69 +17,14 @@ from news_client import (
 
 REFRESH_INTERVAL = os.getenv("REFRESH_INTERVAL", 300)
 
-# --- Page config ---
-st.set_page_config(
-    page_title="FINNTOP",
-    page_icon=":material/breaking_news:",
-    layout="wide",
-)
-
-# --- Minimal CSS: hide Streamlit chrome for terminal look ---
-st.markdown(
-    """
-    <style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .block-container {padding-top: 1rem;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# --- Timezone options ---
-TIMEZONE_OPTIONS = {
-    "ET": "America/New_York",
-    "CT": "America/Chicago",
-    "PT": "America/Los_Angeles",
-    "UTC": "UTC",
-    "GMT": "Europe/London",
-    "CET": "Europe/Berlin",
-    "JST": "Asia/Tokyo",
-    "HKT": "Asia/Hong_Kong",
+# --- news_panel's Tab labels ---
+TAB_MAP = {
+    "ALL": None,
+    "TOP": "general",  # same as "top news" and "business"
+    "FOREX": "forex",
+    "CRYPTO": "crypto",
+    "M&A": "merger",
 }
-
-# --- Header row ---
-col_title, col_mode, col_search, col_tz = st.columns([2, 2, 3, 1.5])
-with col_title:
-    st.markdown("### [FINNTOP](https://github.com/seekingvega/st-finntop)")
-with col_mode:
-    mode = st.segmented_control(
-        "Mode",
-        ["Market", "Company", "Lookup"],
-        default="Market",
-        label_visibility="collapsed",
-    )
-with col_search:
-    placeholders = {
-        "Market": "Filter headlines...",
-        "Company": "Enter ticker (e.g. AAPL)...",
-        "Lookup": "Search symbol (e.g. Apple)...",
-    }
-    search_query = st.text_input(
-        "Search",
-        placeholder=placeholders.get(mode, "Filter headlines..."),
-        label_visibility="collapsed",
-    )
-with col_tz:
-    tz_label = st.selectbox(
-        "Timezone",
-        options=list(TIMEZONE_OPTIONS.keys()),
-        index=0,
-        label_visibility="collapsed",
-    )
-tz_name = TIMEZONE_OPTIONS[tz_label]
-tz = ZoneInfo(tz_name)
 
 # --- Resolve API key ---
 try:
@@ -87,6 +32,21 @@ try:
 except ValueError as e:
     st.error(str(e))
     st.stop()
+
+
+def hide_streamlit_elements():
+    # --- Minimal CSS: hide Streamlit chrome for terminal look ---
+    st.markdown(
+        """
+        <style>
+        #MainMenu {visibility: hidden;}
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
+        .block-container {padding-top: 1rem;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # --- Cached fetch ---
@@ -150,22 +110,14 @@ def _build_df(rows: list[dict], query: str) -> pd.DataFrame:
     return df
 
 
-# --- Tab labels ---
-TAB_MAP = {
-    "ALL": None,
-    "GENERAL": "general",
-    "FOREX": "forex",
-    "CRYPTO": "crypto",
-    "M&A": "merger",
-}
-
-
 # --- Auto-refreshing news fragment ---
 @st.fragment(run_every=REFRESH_INTERVAL)
-def news_panel():
+def news_panel(tz: ZoneInfo, mode: str, search_query: str = None):
     cols = st.columns((1, 1, 3))
+    now_time = datetime.now(tz)
+    tz_name = tz.key
     cols[0].markdown(
-        f"**Last updated: {datetime.now(tz).strftime('%H:%M:%S')} {tz_label}**"
+        f"**Last updated: {now_time.strftime('%H:%M:%S')} {now_time.tzname()}**"
     )
     cols[1].caption(f"refreshes every: {REFRESH_INTERVAL/60} minutes")
 
@@ -187,7 +139,7 @@ def news_panel():
                     "type": st.column_config.TextColumn("TYPE", width="small"),
                 },
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
                 # height=600,
             )
     elif mode == "Company":
@@ -217,7 +169,7 @@ def news_panel():
                     ),
                 },
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
                 height=800,
             )
     else:
@@ -263,9 +215,65 @@ def news_panel():
                             ),
                         },
                         hide_index=True,
-                        use_container_width=True,
+                        width="stretch",
                         height=800,
                     )
 
 
-news_panel()
+def main():
+    # --- Page config ---
+    st.set_page_config(
+        page_title="FINNTOP",
+        page_icon=":material/breaking_news:",
+        layout="wide",
+    )
+
+    # --- Timezone options ---
+    TIMEZONE_OPTIONS = {
+        "ET": "America/New_York",
+        "CT": "America/Chicago",
+        "PT": "America/Los_Angeles",
+        "UTC": "UTC",
+        "GMT": "Europe/London",
+        "CET": "Europe/Berlin",
+        "JST": "Asia/Tokyo",
+        "HKT": "Asia/Hong_Kong",
+    }
+
+    # --- Header row ---
+    col_title, col_mode, col_search, col_tz = st.columns([2, 2, 3, 1.5])
+    with col_title:
+        st.markdown("### [FINNTOP](https://github.com/seekingvega/st-finntop)")
+    with col_mode:
+        mode = st.segmented_control(
+            "Mode",
+            ["Market", "Company", "Lookup"],
+            default="Market",
+            label_visibility="collapsed",
+        )
+    with col_search:
+        placeholders = {
+            "Market": "Filter headlines...",
+            "Company": "Enter ticker (e.g. AAPL)...",
+            "Lookup": "Search symbol (e.g. Apple)...",
+        }
+        search_query = st.text_input(
+            "Search",
+            placeholder=placeholders.get(mode, "Filter headlines..."),
+            label_visibility="collapsed",
+        )
+    with col_tz:
+        tz_label = st.selectbox(
+            "Timezone",
+            options=list(TIMEZONE_OPTIONS.keys()),
+            index=0,
+            label_visibility="collapsed",
+        )
+    tz_name = TIMEZONE_OPTIONS[tz_label]
+    tz = ZoneInfo(tz_name)
+
+    news_panel(tz=tz, mode=mode, search_query=search_query)
+
+
+if __name__ == "__main__":
+    main()
