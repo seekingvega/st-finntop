@@ -58,7 +58,7 @@ def _fetch(
     items = fetch_news(api_key, category)
     return [
         {
-            "time": item.timestamp.astimezone(_tz).strftime("%a, %b %d %Y %H:%M"),
+            "time": item.timestamp.astimezone(_tz).strftime("%b %d, %a, %H:%M"),
             "source": item.source,
             "headline": item.headline,
             "url": item.url,
